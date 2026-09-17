@@ -19,7 +19,10 @@ UI scripting.
 > the C#/.NET project could not be compiled here because it depends on
 > `PluginApi.dll`, which only exists inside an installed copy of the Logi
 > Plugin Service app (not on NuGet, no standalone download). You will need
-> to build it yourself on your Mac; see "Build" below. What *could* be
+> to build it yourself on your Mac - double-clicking
+> **`Build and Install.command`** does this for you (see "Build" below), so
+> it's a one-click step, not a coding task, but it is a step this repo
+> can't skip the way the Stream Deck version could. What *could* be
 > verified without a Mac was verified thoroughly - see
 > docs/ARCHITECTURE.md's "Build verification" section for exactly what
 > that means before you start.
@@ -37,14 +40,25 @@ UI scripting.
 
 ## Build
 
+**Easiest way:** download this repo (GitHub's green **Code** button →
+**Download ZIP**, then unzip it), make sure you have the **.NET 8 SDK**
+installed (see "Requirements" above - if not, `Build and Install.command`
+will tell you exactly what to install), then double-click
+**`Build and Install.command`** in the unzipped folder. It runs the build
+for you and prints plain-English success/failure messages. macOS may warn
+that it's from an unidentified developer the first time - right-click it
+and choose **Open** to confirm you trust it.
+
+If you'd rather use the terminal directly (or the `.command` file fails
+for some reason):
+
 ```bash
 git clone <this repo>
 cd Lightroom-Plugin---MX-Creative-Console-Preset-Shortcut
-node scripts/generate-icons.mjs   # only needed if you want to regenerate icons; already committed
 dotnet build
 ```
 
-`dotnet build` also copies `package/metadata/*` next to the built DLL and
+Either way, the build also copies `package/metadata/*` next to the built DLL and
 (via the `PostBuild` target) writes a `.link` file that tells the Logi
 Plugin Service where to find the plugin - it should appear under "All
 Actions" in Options+'s device configuration screen without a separate
