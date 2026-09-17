@@ -80,22 +80,20 @@ assignments itself.
 Both versions share the exact same `Lightroom/` protocol logic. What
 differs is what each hardware SDK's configuration UI can currently do:
 
-- **No custom title / connection-status glyph on the button face is wired
-  up.** `ApplyPresetCommand` has a `TitleMode` control in its editor, but
-  nothing currently reads it to render text on the device, because
-  overriding a display-name method on `ActionEditorCommand` specifically
-  (as opposed to `PluginDynamicCommand`, which is confirmed to support
-  this) could not be verified in this project's build environment - see
-  "Build verification" below. If your installed SDK version supports it,
-  `Actions/ApplyPresetCommand.cs` has a comment marking exactly where to
-  add it.
+- **No custom free-text title field.** The Stream Deck version lets you
+  type an arbitrary custom title; this version's `TitleMode` control only
+  offers "preset name" or "preset name + connection status" (both
+  confirmed rendered live via `ApplyPresetCommand.GetCommandDisplayName` -
+  see "Build verification" below). A real `ActionEditorTextbox` control
+  was confirmed to exist during that same verification pass, so a
+  free-text option could be added the same way; it just wasn't in this
+  first pass.
 - **No favorites / search UI.** The Stream Deck version groups a
-  "★ Favorites" section using its own global settings API. This project
-  scoped that out rather than guess at an unverified
-  `Plugin.SetPluginSetting`-based implementation under time constraints;
-  the reference project's own `LightroomPlugin.cs` confirms
-  `SetPluginSetting`/`TryGetPluginSetting` exist, so this is a reasonable
-  thing to add later, not a hard SDK limitation.
+  "★ Favorites" section using its own global settings API. `Plugin.SetPluginSetting`/`TryGetPluginSetting`
+  are confirmed present and exactly this shape in the real `PluginApi.dll`
+  (see "Build verification"), so this is a scoping choice under time
+  constraints, not a hard SDK limitation - a reasonable thing to add
+  later.
 - **`ApplyPresetCommand.RunCommand` blocks briefly** (up to 10s) on the
   actual apply-preset outcome before returning its success/failure boolean,
   because that boolean is the only feedback channel confirmed available on
@@ -105,42 +103,69 @@ differs is what each hardware SDK's configuration UI can currently do:
 
 ## Build verification
 
-This project's C# could not be compiled against the real `PluginApi.dll`
-in the environment it was built in, because that assembly ships **inside
-an installed copy of the Logi Plugin Service macOS app** - it is not on
-NuGet and has no standalone download. What was actually done instead:
+This project's C# was written in a Linux sandbox with no macOS, no Logi
+Options+, and no MX Creative Console available - but it has still been
+compiled against the **real** `PluginApi.dll`, not just a guess. Here's
+exactly how, in order:
 
 1. **The entire `Lightroom/` namespace** (the WebSocket client, JSON
    parsing, reconnect logic, preset cache, and typed error handling) has
-   zero dependency on `PluginApi` and was compiled *and run* for real with
-   the .NET 8 SDK, including letting its reconnect loop execute against a
-   real (absent) Lightroom process for several seconds and confirming the
-   typed error path fires correctly. This is the part of the project doing
-   the trickiest work (async networking, concurrency, defensive JSON
-   parsing), and it is genuinely verified, not just reviewed.
-2. **The `PluginApi`-dependent shell** (`LightroomPresetsPlugin.cs`,
-   `LightroomApplication.cs`, `PluginLog.cs`, `PluginResources.cs`,
-   `Actions/*.cs`) was compiled against a hand-written stub assembly
-   reproducing every `PluginApi` type/method signature this project calls,
-   built from two real sources: Logitech's own current, official
-   `Logitech/actions-sdk` DemoPlugin (confirms `Plugin`, `ClientApplication`,
-   `PluginDynamicCommand`, `PluginLog`/`PluginResources` boilerplate,
-   `GetCommandImage`/`ActionImageChanged`), and the third-party
-   `loupedeck-lightroom-cc` plugin (confirms `ActionEditorCommand`,
-   `ActionEditorListbox`, and their event/parameter shapes). Every call
-   site compiled clean against that stub - this catches wrong argument
-   counts/types and incorrect overrides, but it *cannot* catch a
-   fundamental API difference the stub itself got wrong (since the stub's
-   shape is this project's own best reconstruction, not the real
-   assembly).
-3. What this **does not** prove: that the real `PluginApi.dll` matches the
-   stub exactly, or that the plugin actually loads and runs correctly
-   inside a real Logi Plugin Service process, or that a physical MX
-   Creative Console button press actually applies a Lightroom preset. See
-   docs/TESTING.md for exactly what to check on your own Mac, and please
-   report back anything that doesn't match (particularly any compile error
-   naming a `PluginApi` type/member, which would mean the stub's guess
-   about that member's exact signature was wrong).
+   zero dependency on `PluginApi`, so it could be compiled *and run* for
+   real with the .NET SDK on its own - including letting its reconnect
+   loop execute against a real (absent) Lightroom process for several
+   seconds and confirming the typed error path fires correctly. This is
+   the part of the project doing the trickiest work (async networking,
+   concurrency, defensive JSON parsing).
+2. **The `PluginApi`-dependent shell** was first written against a
+   hand-written stub assembly reconstructing every `PluginApi`
+   type/method this project calls, built from two real sources:
+   Logitech's own current, official `Logitech/actions-sdk` DemoPlugin, and
+   the third-party `loupedeck-lightroom-cc` plugin (for the
+   `ActionEditorCommand`/`ActionEditorListbox` dropdown pattern - see
+   docs/PROTOCOL.md). This caught wrong argument counts/types early, but
+   couldn't catch anything the stub itself guessed wrong.
+3. **The user then supplied the real `PluginApi.dll`** (v6.4.1.3246) from
+   their own installed Logi Plugin Service, extracted from
+   `/Applications/Utilities/LogiPluginService.app/Contents/MonoBundle/`.
+   Reflecting on it directly (via `System.Reflection.MetadataLoadContext`,
+   which reads assembly metadata without executing any of its code)
+   turned up several real, concrete differences from the stub:
+   - `ActionEditorCommand`'s constructor requires a `DeviceType`
+     argument (`ActionEditorCommand(DeviceType supportedDevices)`) -
+     fixed by calling `base(DeviceType.All)`.
+   - `PluginDynamicCommand`'s 3-argument constructor the public DemoPlugin
+     sample uses doesn't exist in this version - it takes a `DeviceType`
+     as a required 4th argument too.
+   - `ActionEditorListbox`'s constructor takes three arguments
+     (`name, labelText, description`), not two.
+   - `ActionEditorCommand` (via its `ActionEditorAction` base) does expose
+     `protected virtual String GetCommandDisplayName(ActionEditorActionParameters actionParameters)`
+     and a matching `GetCommandImage` overload - confirmed real and now
+     wired up in `ApplyPresetCommand.GetCommandDisplayName`, resolving
+     what was previously an "unverified, not implemented" gap.
+   - The installed assembly itself targets **.NET 10** (it references
+     `System.Runtime, Version=10.0.0.0`), not the `net8.0` Logitech's own
+     public GitHub sample project declares. This repo's
+     `<TargetFramework>` was updated to `net10.0` to match - a build
+     against a "correct-looking" `net8.0` project would have failed with
+     a framework-version conflict despite every method signature being
+     right.
+   - Everything else (`ActionEditorActionParameters.TryGetString`,
+     `ActionEditorState.GetControlValue`/`SetDisplayName`,
+     `ClientApplication.GetProcessName`/`GetBundleName`, the
+     `PluginLog`/`PluginResources` boilerplate, `RunCommand`'s signature
+     itself) matched the stub exactly.
+4. **After fixing those, the project built with the real `PluginApi.dll`
+   with zero warnings and zero errors.** The DLL was used only locally for
+   this verification and was not committed to the repo or redistributed -
+   it's Logitech's proprietary file, not this project's to distribute.
+
+What this **still doesn't** prove: that the plugin actually loads and runs
+correctly inside a live Logi Plugin Service process, that its actions
+appear and behave correctly in Options+'s UI, or that a physical MX
+Creative Console key press actually applies a Lightroom preset. Those are
+the one category of thing that genuinely needs the physical hardware and
+a live session - see docs/TESTING.md's critical acceptance test.
 
 ## macOS-only, no automation, no unnecessary native dependencies
 

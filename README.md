@@ -12,27 +12,36 @@ This targets **Lightroom Desktop/CC only**, via Lightroom's own local
 (C#/.NET track) - not Lightroom Classic, not accessibility automation, not
 UI scripting.
 
-> **Read this before building.** This project was written in a Linux
-> sandbox with no access to macOS, Logi Options+, an MX Creative Console,
-> or a licensed Lightroom install. Unlike a typical "download and
-> double-click" plugin, **there is no prebuilt package in this repo** -
-> the C#/.NET project could not be compiled here because it depends on
-> `PluginApi.dll`, which only exists inside an installed copy of the Logi
-> Plugin Service app (not on NuGet, no standalone download). You will need
-> to build it yourself on your Mac - double-clicking
-> **`Build and Install.command`** does this for you (see "Build" below), so
-> it's a one-click step, not a coding task, but it is a step this repo
-> can't skip the way the Stream Deck version could. What *could* be
-> verified without a Mac was verified thoroughly - see
-> docs/ARCHITECTURE.md's "Build verification" section for exactly what
-> that means before you start.
+> **This project was written in a Linux sandbox** with no access to
+> macOS, Logi Options+, an MX Creative Console, or a licensed Lightroom
+> install - so unlike a typical "download and double-click" plugin,
+> **there is no prebuilt package in this repo**: the C#/.NET project
+> depends on `PluginApi.dll`, which only exists inside an installed copy
+> of the Logi Plugin Service app (not on NuGet, no standalone download).
+> You'll need to build it yourself on your Mac - double-clicking
+> **`Build and Install.command`** does this for you (see "Build" below),
+> so it's a one-click step, not a coding task.
+>
+> That said, this has genuinely been build-verified, not just carefully
+> written: a real `PluginApi.dll` (v6.4.1.3246) from an actual Logi Plugin
+> Service install was provided during development and used to compile
+> this exact code, producing a clean build with **zero errors**. That
+> also caught a real, non-obvious detail: the installed SDK targets
+> **.NET 10**, not the .NET 8 Logitech's own public sample project uses -
+> this repo already targets `net10.0` to match. See docs/ARCHITECTURE.md's
+> "Build verification" section for the full story, including the one
+> thing that still can't be verified without physical hardware: an actual
+> key press applying an actual preset.
 
 ## Requirements
 
 - macOS with **Logi Options+** installed and opened at least once (this
   installs the Logi Plugin Service, which the build depends on).
-- **.NET 8 SDK** (`dotnet --version` should report 8.x or a compatible
-  later SDK that can still target `net8.0`).
+- **.NET 10 SDK** (`dotnet --version` should report 10.x). If your
+  installed Logi Plugin Service turns out to target a different .NET
+  version than the one confirmed here, `LightroomPresetsPlugin.csproj`'s
+  `<TargetFramework>` is the one line to adjust - see
+  docs/TROUBLESHOOTING.md.
 - A Logitech **MX Creative Console** (Keypad and/or Dialpad).
 - Adobe Lightroom Desktop/CC (the cloud-based app - **not** Lightroom
   Classic), with **Preferences > Interface > "Enable external
@@ -41,7 +50,7 @@ UI scripting.
 ## Build
 
 **Easiest way:** download this repo (GitHub's green **Code** button →
-**Download ZIP**, then unzip it), make sure you have the **.NET 8 SDK**
+**Download ZIP**, then unzip it), make sure you have the **.NET 10 SDK**
 installed (see "Requirements" above - if not, `Build and Install.command`
 will tell you exactly what to install), then double-click
 **`Build and Install.command`** in the unzipped folder. It runs the build

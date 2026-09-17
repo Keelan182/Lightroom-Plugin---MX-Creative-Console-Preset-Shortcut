@@ -1,23 +1,25 @@
 # Test plan
 
-This project was built and verified in a Linux sandbox with no access to
-macOS, Logi Options+, an MX Creative Console, or a licensed Lightroom
-install. Everything below needs to be run by you. See
-docs/ARCHITECTURE.md's "Build verification" section for exactly what was
-already proven (the Lightroom protocol layer, compiled and run for real)
-versus what could only be carefully written against reference sources (the
-plugin-hosting shell).
+This project was built in a Linux sandbox with no access to macOS, Logi
+Options+, an MX Creative Console, or a licensed Lightroom install - but a
+real `PluginApi.dll` from an actual Logi Plugin Service install was
+provided during development and used to compile this exact code (see
+docs/ARCHITECTURE.md's "Build verification" section for the full story).
+What's left in this document is what only physical hardware and a live
+session can confirm.
 
 ## Build-time checks (already done)
 
-- [x] `Lightroom/*.cs` compiles under the .NET 8 SDK with zero warnings/errors.
+- [x] `Lightroom/*.cs` compiles under the .NET SDK with zero warnings/errors.
 - [x] `Lightroom/*.cs` was actually **run** (not just compiled): the
       reconnect loop executed for real, correctly reported "not running"
       with no Lightroom process present, and `PresetApplicationService`
       threw the correct typed error.
-- [x] The full plugin project (actions, manifest copying, embedded
-      resources) compiles with zero errors against a hand-written stub
-      reproducing every `PluginApi` signature this project calls.
+- [x] The full plugin project **compiled clean (0 warnings, 0 errors)
+      against a real `PluginApi.dll` (v6.4.1.3246)** extracted from an
+      actual installed Logi Plugin Service - not a stand-in. This caught
+      and fixed several real signature mismatches (constructor arguments,
+      the actual .NET target version) - see docs/ARCHITECTURE.md.
 - [x] Generated icons (`package/metadata/Icon256x256.png`,
       `images/Success.png`, `images/Error.png`) render correctly.
 
@@ -26,10 +28,13 @@ plugin-hosting shell).
 1. Install Logi Options+ (which installs the Logi Plugin Service) and open
    it at least once.
 2. `dotnet build` from the repo root (or open `LightroomPresetsPlugin.sln`
-   in Visual Studio/Rider).
-3. If this fails on a specific `PluginApi` member, see
-   docs/TROUBLESHOOTING.md - it means the real assembly's signature differs
-   slightly from this project's best reconstruction of it.
+   in Visual Studio/Rider) - or just double-click
+   `Build and Install.command`.
+3. This is expected to succeed - it already has, against a real install.
+   If it fails on a specific `PluginApi` member or a .NET version
+   mismatch, your installed Logi Plugin Service version differs from
+   v6.4.1.3246 (the one this was verified against); see
+   docs/TROUBLESHOOTING.md.
 4. On success, `npm run link`-equivalent for this SDK is the `.link` file
    the `PostBuild` target writes automatically during `dotnet build` - the
    plugin should appear in Options+'s device configuration screen under

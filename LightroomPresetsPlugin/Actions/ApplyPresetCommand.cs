@@ -11,15 +11,10 @@ namespace Loupedeck.LightroomPresetsPlugin.Actions
     // dropdown per assigned button instance (the same UX Stream Deck calls a
     // "Property Inspector"), not a fixed set of named sub-commands.
     //
-    // This exact class shape (ActionEditorCommand + ActionEditorListbox with
-    // ListboxItemsRequested/ControlValueChanged, and RunCommand reading the
-    // control's value via ActionEditorActionParameters.TryGetString) is
-    // reproduced from a real, working third-party Lightroom plugin for this
-    // same device family that this project studied - see docs/PROTOCOL.md
-    // for the full attribution note. It was not possible to compile this
-    // specific file in the environment this project was built in, because
-    // PluginApi.dll (which defines ActionEditorCommand) only ships inside an
-    // installed copy of the Logi Plugin Service app - see README.md.
+    // Every signature in this file (ActionEditorCommand's constructor,
+    // ActionEditorListbox's constructor, RunCommand/GetCommandDisplayName's
+    // exact parameter types) was confirmed against a real PluginApi.dll
+    // (v6.4.1.3246) via reflection, not guessed - see docs/PROTOCOL.md.
     public class ApplyPresetCommand : ActionEditorCommand
     {
         private const String PresetControlName = "PresetSelection";
@@ -28,16 +23,16 @@ namespace Loupedeck.LightroomPresetsPlugin.Actions
         private const String TitleModePresetOnly = "preset";
         private const String TitleModePresetAndStatus = "preset-and-status";
 
-        public ApplyPresetCommand()
+        public ApplyPresetCommand() : base(DeviceType.All)
         {
             this.Name = "ApplyPreset";
             this.DisplayName = "Apply Lightroom Preset";
             this.GroupName = "Lightroom Presets";
             this.Description = "Applies a chosen Lightroom Desktop/CC develop preset to the currently selected photo.";
 
-            this.ActionEditor.AddControlEx(new ActionEditorListbox(name: PresetControlName, labelText: "Preset:"));
+            this.ActionEditor.AddControlEx(new ActionEditorListbox(name: PresetControlName, labelText: "Preset:", description: "The Lightroom preset to apply."));
 
-            this.ActionEditor.AddControlEx(new ActionEditorListbox(name: TitleModeControlName, labelText: "Button title:"));
+            this.ActionEditor.AddControlEx(new ActionEditorListbox(name: TitleModeControlName, labelText: "Button title:", description: "What to display on the key."));
 
             this.ActionEditor.ListboxItemsRequested += this.OnListboxItemsRequested;
             this.ActionEditor.ControlValueChanged += this.OnControlValueChanged;
@@ -122,19 +117,23 @@ namespace Loupedeck.LightroomPresetsPlugin.Actions
             }
         }
 
-        // NOTE: unlike the Stream Deck version of this plugin, this action
-        // does not expose a per-button "custom title" free-text field, and
-        // the "Button title" control above is not currently wired to
-        // anything rendered on the physical button. Only ActionEditorListbox
-        // was confirmed available while building this project (see
-        // docs/PROTOCOL.md) - showing a live title on the device face
-        // appears to need an override such as GetCommandDisplayName, which
-        // is confirmed to exist on PluginDynamicCommand (see
-        // Actions/RefreshPresetsCommand.cs) but was not confirmed on
-        // ActionEditorCommand specifically without a local PluginApi.dll to
-        // inspect. If your installed SDK version supports it, add:
-        //   protected override String GetCommandDisplayName(String actionParameter, PluginImageSize imageSize)
-        // reading the preset name (and TitleMode, for the "+ connection
-        // status" option) the same way RunCommand reads them above.
+        protected override String GetCommandDisplayName(ActionEditorActionParameters actionParameters)
+        {
+            if (!actionParameters.TryGetString(PresetControlName, out var presetId) || presetId == "none" || String.IsNullOrEmpty(presetId))
+            {
+                return "Select\nPreset";
+            }
+
+            var preset = LightroomPresetsPlugin.PresetManager.FindById(presetId);
+            var name = preset.HasValue ? preset.Value.Name : "Preset\nNot Found";
+
+            actionParameters.TryGetString(TitleModeControlName, out var titleMode);
+            if (titleMode == TitleModePresetAndStatus)
+            {
+                return $"{name}\n({LightroomPresetsPlugin.Connection.Status})";
+            }
+
+            return name;
+        }
     }
 }

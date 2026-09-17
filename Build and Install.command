@@ -15,8 +15,8 @@ if ! command -v dotnet >/dev/null 2>&1; then
 	echo "The .NET SDK does not appear to be installed on this Mac yet."
 	echo
 	echo "To install it:"
-	echo "  1. Open https://dotnet.microsoft.com/download/dotnet/8.0 in your browser"
-	echo "  2. Download and run the macOS installer for the '.NET 8.0 SDK'"
+	echo "  1. Open https://dotnet.microsoft.com/download/dotnet/10.0 in your browser"
+	echo "  2. Download and run the macOS installer for the '.NET 10.0 SDK'"
 	echo "     (pick Arm64 for Apple Silicon Macs, x64 for Intel Macs)"
 	echo "  3. Come back and double-click this file again"
 	echo
@@ -53,9 +53,11 @@ if [ $BUILD_RESULT -eq 0 ]; then
 else
 	echo "Build FAILED - see the messages above for the reason."
 	echo
-	echo "If an error mentions 'PluginApi', that means this project's guess at"
-	echo "Logitech's exact plugin API didn't quite match what's installed on"
-	echo "your Mac. Copy the full error text and send it back for a fix - see"
+	echo "This exact project has been verified to build clean against a real"
+	echo "Logi Plugin Service install, so a failure here most likely means your"
+	echo "installed version differs from that one (e.g. a different .NET"
+	echo "version - check the error for a framework-version mismatch). Copy"
+	echo "the full error text and send it back for a fix - see"
 	echo "docs/TROUBLESHOOTING.md for more detail."
 fi
 echo "=========================================="

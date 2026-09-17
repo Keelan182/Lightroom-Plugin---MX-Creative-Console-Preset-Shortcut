@@ -23,7 +23,7 @@ namespace Loupedeck.LightroomPresetsPlugin.Actions
         private readonly String _errorImagePath;
 
         public RefreshPresetsCommand()
-            : base(displayName: "Refresh Lightroom Presets", description: "Re-discovers presets from Lightroom Desktop/CC and updates every button's cached preset list.", groupName: "Lightroom Presets")
+            : base(displayName: "Refresh Lightroom Presets", description: "Re-discovers presets from Lightroom Desktop/CC and updates every button's cached preset list.", groupName: "Lightroom Presets", supportedDevices: DeviceType.All)
         {
             this._successImagePath = PluginResources.FindFile("Success.png");
             this._errorImagePath = PluginResources.FindFile("Error.png");
