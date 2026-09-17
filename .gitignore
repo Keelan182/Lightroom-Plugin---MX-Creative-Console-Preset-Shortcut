@@ -1,0 +1,6 @@
+bin/
+obj/
+*.user
+.vs/
+.DS_Store
+*.lplug4

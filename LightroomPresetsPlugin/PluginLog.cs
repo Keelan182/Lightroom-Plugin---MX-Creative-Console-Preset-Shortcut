@@ -1,0 +1,54 @@
+namespace Loupedeck.LightroomPresetsPlugin
+{
+    using System;
+
+    // A helper class to write to the plugin log.
+    internal static class PluginLog
+    {
+        private static PluginLogFile _pluginLogFile;
+
+        public static void Init(PluginLogFile pluginLogFile)
+        {
+            pluginLogFile.CheckNullArgument(nameof(pluginLogFile));
+            PluginLog._pluginLogFile = pluginLogFile;
+        }
+
+        public static void Verbose(String text) => PluginLog._pluginLogFile?.Verbose(text);
+
+        public static void Verbose(Exception ex, String text) => PluginLog._pluginLogFile?.Verbose(ex, text);
+
+        public static void Info(String text) => PluginLog._pluginLogFile?.Info(text);
+
+        public static void Info(Exception ex, String text) => PluginLog._pluginLogFile?.Info(ex, text);
+
+        public static void Warning(String text) => PluginLog._pluginLogFile?.Warning(text);
+
+        public static void Warning(Exception ex, String text) => PluginLog._pluginLogFile?.Warning(ex, text);
+
+        public static void Error(String text) => PluginLog._pluginLogFile?.Error(text);
+
+        public static void Error(Exception ex, String text) => PluginLog._pluginLogFile?.Error(ex, text);
+
+        // Bridges this static logger to the (level, message) delegate shape
+        // the host-agnostic Lightroom/* classes expect, so they never need to
+        // reference PluginApi directly. See docs/ARCHITECTURE.md.
+        public static void Bridge(String level, String message)
+        {
+            switch (level)
+            {
+                case "error":
+                    PluginLog.Error(message);
+                    break;
+                case "warn":
+                    PluginLog.Warning(message);
+                    break;
+                case "debug":
+                    PluginLog.Verbose(message);
+                    break;
+                default:
+                    PluginLog.Info(message);
+                    break;
+            }
+        }
+    }
+}

@@ -1,0 +1,21 @@
+{
+	"_comment": "Illustrative only. Per-key preset assignments are stored by the Logi Plugin Service as part of your device profile, not by this plugin - there is no config file to hand-edit. This shows the shape of this plugin's own on-disk preset cache.",
+
+	"examplePresetsCacheFile": {
+		"_path": "~/Library/Application Support/com.keelan182.lightroom-presets-mx/presets-cache.json",
+		"updatedAt": "2026-09-17T12:00:00.000Z",
+		"presets": [
+			{ "id": "a1b2c3d4-0001-4a11-8b22-000000000001", "name": "Concert Warm" },
+			{ "id": "a1b2c3d4-0002-4a11-8b22-000000000002", "name": "Concert Cool" },
+			{ "id": "a1b2c3d4-0003-4a11-8b22-000000000003", "name": "Portrait Natural" },
+			{ "id": "a1b2c3d4-0004-4a11-8b22-000000000004", "name": "Black & White" },
+			{ "id": "a1b2c3d4-0005-4a11-8b22-000000000005", "name": "Cinematic" },
+			{ "id": "a1b2c3d4-0006-4a11-8b22-000000000006", "name": "Vibrant" }
+		]
+	},
+
+	"exampleConnectionStateFile": {
+		"_path": "~/Library/Application Support/com.keelan182.lightroom-presets-mx/connection-state.json",
+		"clientGuid": "b7e2a1c0-....-....-....-............"
+	}
+}
